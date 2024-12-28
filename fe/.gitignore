@@ -169,5 +169,5 @@ dist
 # wrangler project
 
 .dev.vars
-package.json
+package-lock.json
 src/index.js
