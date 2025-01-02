@@ -62,6 +62,10 @@ const EmailSchema = new mongoose.Schema({
             type: String,
             default: "attachment",
         },
+        objectName: {
+            type: String,
+            required: false,
+        },
         mimeType: {
             type: String,
             required: true,
@@ -74,7 +78,7 @@ const EmailSchema = new mongoose.Schema({
             type: String,
             required: false,
         },
-        b64: {
+        url: {
             type: String,
             required: false,
         },

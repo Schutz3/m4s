@@ -1,4 +1,13 @@
 name = "email_worker_parser"
 main = "src/index.js"
-compatibility_date = "2022-12-05"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 usage_model = "unbound"
+
+[vars]
+MINIO_BUCKET=""
+MINIO_ACCESS_KEY=""
+MINIO_SECRET_KEY=""
+MINIO_ENDPOINT=""
+API_URL=""
+TOKEN=""

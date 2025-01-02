@@ -2,10 +2,30 @@ import { Email } from '../models/data.model.js';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { emitNewEmail } from '../lib/socket.js';
+import * as Minio from 'minio';
 
 dotenv.config();
 
-const RECEIVE_TOKEN = process.env.RECEIVE_TOKEN;
+const RECEIVE_TOKEN = process.env.TOKEN;
+const minioClient = new Minio.Client({
+    endPoint: process.env.MINIO_ENDPOINT,
+    port: 443,
+    useSSL: true,
+    accessKey: process.env.MINIO_ACCESS_KEY,
+    secretKey: process.env.MINIO_SECRET_KEY
+});
+
+minioClient.listBuckets((err, buckets) => {
+    if (err) {
+        console.error('Error connecting to Minio:', err);
+    } else {
+        console.log('Successfully connected to Minio');
+        console.log('Available buckets:', buckets.map(b => b.name).join(', '));
+    }
+});
+
+
+const MINIO_BUCKET = process.env.MINIO_BUCKET;
 
 export const getEmails = async (req, res) => {
     try {
@@ -26,42 +46,59 @@ export const getEmails = async (req, res) => {
 };
 
 export const storeEmail = async (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ message: "Authorization header is missing" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    if (token !== RECEIVE_TOKEN) {
-        return res.status(403).json({ message: "Invalid token" });
-    }
-
-    const data = req.body;
-    if (!data) {
-        return res.status(400).json({ message: "No data provided" });
-    }
-
-    const requiredFields = ['from', 'to', 'subject'];
-    for (const field of requiredFields) {
-        if (!(field in data)) {
-            return res.status(400).json({ message: `Missing required field: ${field}` });
-        }
-    }
-
-    const emailData = {
-        from: data.from,
-        to: data.to,
-        subject: data.subject,
-        html: data.html,
-        text: data.text,
-        attachments: data.attachments,
-        receivedAt: new Date()
-    };
-
     try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({ message: "Authorization header is missing" });
+        }
+
+        const token = authHeader.split(" ")[1];
+        if (token !== RECEIVE_TOKEN) {
+            return res.status(403).json({ message: "Invalid token" });
+        }
+
+        const data = req.body;
+        if (!data) {
+            return res.status(400).json({ message: "No data provided" });
+        }
+
+        const requiredFields = ['from', 'to', 'subject'];
+        for (const field of requiredFields) {
+            if (!(field in data)) {
+                return res.status(400).json({ message: `Missing required field: ${field}` });
+            }
+        }
+
+        const emailData = {
+            from: data.from,
+            to: data.to,
+            subject: data.subject,
+            html: data.html,
+            text: data.text,
+            attachments: [],
+            receivedAt: new Date()
+        };
+
+        if (data.attachments && Array.isArray(data.attachments)) {
+            for (const attachment of data.attachments) {
+                const attachmentData = {
+                    filename: attachment.filename,
+                    disposition: attachment.disposition,
+                    objectName: attachment.objectName,
+                    mimeType: attachment.mimeType,
+                    size: attachment.size
+                };
+
+                if (attachment.objectName) {
+                    attachmentData.url = `https://${process.env.MINIO_ENDPOINT}/${MINIO_BUCKET}/${attachment.objectName}`;
+                }
+
+                emailData.attachments.push(attachmentData);
+            }
+        }
+
         const newEmail = new Email(emailData);
         const result = await newEmail.save();
-
         await emitNewEmail({
             _id: result._id,
             from: result.from,
@@ -71,8 +108,7 @@ export const storeEmail = async (req, res) => {
         });
         return res.status(201).json({ message: "Email stored successfully", id: result._id });
     } catch (error) {
-        console.error('Error storing email:', error);
-        return res.status(500).json({ message: error.message });
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
 
@@ -135,9 +171,21 @@ export const deleteEmailById = async (req, res) => {
             }
         }
 
+        if (email.attachments && email.attachments.length > 0) {
+            for (const attachment of email.attachments) {
+                if (attachment.objectName) {
+                    try {
+                        await minioClient.removeObject(MINIO_BUCKET, attachment.objectName);
+                    } catch (error) {
+                        console.error(`Error deleting attachment ${attachment.objectName} from Minio:`, error);
+                    }
+                }
+            }
+        }
+
         await Email.findByIdAndDelete(emailId);
 
-        res.status(200).json({ message: 'Email deleted successfully' });
+        res.status(200).json({ message: 'Email and its attachments deleted successfully' });
     } catch (error) {
         console.error('Error deleting email by ID:', error);
         res.status(500).json({ message: 'Internal server error' });
