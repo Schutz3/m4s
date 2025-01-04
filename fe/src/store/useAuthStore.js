@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 import { useEmailStore } from './useEmailStore';
 import { useCaptchaStore } from "./useCaptchaStore.js";
+import { playNotificationSound, showNotification, updateFaviconBadge } from '../lib/utils';
 
 
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
@@ -18,14 +19,32 @@ export const useAuthStore = create((set, get) => ({
   socket: null,
 
   checkAuth: async () => {
+    set({ isCheckingAuth: true });
     try {
       const res = await axiosInstance.get("/auth/check");
-      const { token, ...userData } = res.data;
-      if (token) {
-        document.cookie = `science=${token}; path=/; secure; samesite=strict`;
-      }
+      const userData = res.data;
       
-      set({ authUser: userData });
+      await new Promise(resolve => {
+        set((state) => {
+          const newState = { 
+            ...state, 
+            authUser: {
+              user: {
+                id: userData._id,
+                username: userData.username,
+                role: userData.role,
+                isActive: userData.isActive,
+                createdAt: userData.createdAt,
+                updatedAt: userData.updatedAt
+              },
+              preference: userData.preference
+            }
+          };
+          resolve();
+          return newState;
+        });
+      });
+
       get().connectSocket();
     } catch (error) {
       set({ authUser: null });
@@ -33,6 +52,7 @@ export const useAuthStore = create((set, get) => ({
       set({ isCheckingAuth: false });
     }
   },
+
 
   login: async (data) => {
     set({ isLoggingIn: true });
@@ -130,10 +150,10 @@ export const useAuthStore = create((set, get) => ({
   connectSocket: () => {
     const { authUser } = get();
     if (!authUser || !authUser.user || !authUser.user.id) {
+      console.error('Cannot connect socket.io without authentication', authUser);
       return;
     }
     if (get().socket?.connected) {
-      console.log('Socket.io connected');
       return;
     }
   
@@ -146,6 +166,7 @@ export const useAuthStore = create((set, get) => ({
     socket.connect();
   
     socket.on('connect', () => {
+      console.log('Socket connected successfully');
       set({ socket: socket });
     });
   
@@ -157,9 +178,18 @@ export const useAuthStore = create((set, get) => ({
       set({ onlineUsers: userIds });
     });
   
-    socket.on('newEmail', (email) => {
+    socket.on('newEmail', async (email) => {
       toast.success(`New email from ${email.from}`);
       useEmailStore.getState().addNewEmail(email);
+    
+      playNotificationSound();
+    
+      showNotification('New Email', {
+        body: `From: ${email.from}`,
+        icon: 'https://s3.scz.my.id/m4s/attachments/m4s-ico.png'
+      });
+      updateFaviconBadge();
+      document.title = '(New) Mail4Spam - By Zee';
     });
   
     socket.on('disconnect', (reason) => {
