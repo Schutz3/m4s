@@ -1,5 +1,5 @@
 import Navbar from "./components/Navbar";
-
+import Footer from "./components/Footer"
 import HomePage from "./pages/HomePage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
@@ -42,7 +42,8 @@ const App = () => {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
         </Routes>
-      </main>
+        </main>
+      <Footer />
       <Toaster />
     </div>
   );
