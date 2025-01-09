@@ -1,5 +1,5 @@
 import { useEmailStore } from "../store/useEmailStore";
-import { askNotificationPermissionOnFirstVisit } from './lib/utils';
+import { askNotificationPermissionOnFirstVisit } from '../lib/utils';
 import React, { useEffect } from 'react';
 import Sidebar from "../components/Sidebar";
 import NoEmailSelected from "../components/NoEmailSelected";
