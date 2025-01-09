@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSidebarStore } from "../store/useSidebarStore";
-import { LogOut, Mail, Settings, User } from "lucide-react";
+import { LogOut, Mail, Settings, User, Coffee } from "lucide-react";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
@@ -26,6 +26,10 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link to={"https://saweria.co/aerialsz"} className="btn btn-sm gap-2">
+                  <Coffee className="size-5" />
+                  <span className="hidden sm:inline">BMAC</span>
+            </Link>
             <Link
               to={"/settings"}
               className="btn btn-sm gap-2 transition-colors"
