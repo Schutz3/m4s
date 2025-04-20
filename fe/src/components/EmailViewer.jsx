@@ -28,11 +28,11 @@ const EmailViewer = () => {
 
 
   useEffect(() => {
-    if (selectedEmail && !selectedEmail.html) {
+    if (selectedEmail && !selectedEmail.isFetched) {
       getEmailById(selectedEmail._id);
     }
-  }, [selectedEmail, getEmailById]);
-
+  }, [selectedEmail, getEmailById]);  
+  
   if (!selectedEmail) return <div className="p-5 text-center">Select an email to view</div>;
   if (isEmailLoading) return <div className="p-5 text-center">Loading...</div>;
   if (!selectedEmail || !selectedEmail.attachments) {

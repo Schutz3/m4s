@@ -26,7 +26,8 @@ export const useEmailStore = create((set, get) => {
       set({ isEmailLoading: true });
       try {
         const response = await axiosInstance.get(`/email/${id}`);
-        set({ selectedEmail: response.data, isEmailLoading: false });
+        const fetchedEmail = { ...response.data, isFetched: true }; // mark as fetched
+        set({ selectedEmail: fetchedEmail, isEmailLoading: false });
       } catch (error) {
         console.error('Error fetching email:', error);
         set({ isEmailLoading: false });

@@ -171,3 +171,4 @@ dist
 .dev.vars
 package-lock.json
 src/index.js
+mail.sh
