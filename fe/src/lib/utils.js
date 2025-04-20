@@ -9,7 +9,7 @@ export function formatMessageTime(date) {
 let notificationAudio;
 
 export const preloadNotificationSound = () => {
-  notificationAudio = new Audio('https://s3.scz.my.id/m4s/attachments/notification.mp3');
+  notificationAudio = new Audio('https://s3.scz.my.id/m4s/assets/notification.mp3');
   notificationAudio.load();
 };
 

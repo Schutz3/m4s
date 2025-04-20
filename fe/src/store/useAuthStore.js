@@ -186,7 +186,7 @@ export const useAuthStore = create((set, get) => ({
     
       showNotification('New Email', {
         body: `From: ${email.from}`,
-        icon: 'https://s3.scz.my.id/m4s/attachments/m4s-ico.png'
+        icon: 'https://s3.scz.my.id/m4s/assets/m4s-ico.png'
       });
       updateFaviconBadge();
       document.title = '(New) Mail4Spam - By Zee';
